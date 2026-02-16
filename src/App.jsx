@@ -32,7 +32,6 @@ function App() {
 
   // --- BULK ENTRY STATE ---
   const [bulkText, setBulkText] = useState('');
-  // Removed defaultCompany state as requested
   const [bulkContacts, setBulkContacts] = useState([]);
 
   // --- LOGIC: SMART PARSER ---
@@ -214,13 +213,13 @@ END:VCARD`;
         }
 
         * { box-sizing: border-box; }
-        body { margin: 0; padding: 0; font-family: 'Inter', system-ui, sans-serif; background: var(--bg-body); color: var(--text-main); height: 100vh; overflow: hidden; }
+        body { margin: 0; padding: 0; font-family: 'Inter', system-ui, sans-serif; background: var(--bg-body); color: var(--text-main); }
 
-        /* LAYOUT */
-        .app-shell { display: flex; height: 100vh; width: 100vw; }
+        /* LAYOUT - MOBILE FIRST SCROLLING */
+        .app-shell { display: flex; height: 100vh; width: 100vw; overflow: hidden; }
         
         /* SIDEBAR */
-        .sidebar { width: 260px; background: var(--primary); color: white; display: flex; flex-direction: column; flex-shrink: 0; transition: transform 0.3s ease; z-index: 50; box-shadow: 4px 0 24px rgba(0,0,0,0.1); }
+        .sidebar { width: 260px; background: var(--primary); color: white; display: flex; flex-direction: column; flex-shrink: 0; transition: transform 0.3s ease; z-index: 100; box-shadow: 4px 0 24px rgba(0,0,0,0.1); }
         .logo-section { height: 70px; display: flex; align-items: center; padding: 0 24px; font-size: 1.25rem; font-weight: 800; border-bottom: 1px solid rgba(255,255,255,0.1); letter-spacing: -0.5px; }
         .nav-menu { padding: 20px 15px; flex: 1; }
         .nav-link { display: flex; align-items: center; gap: 12px; padding: 14px 16px; color: #94a3b8; text-decoration: none; border-radius: 8px; cursor: pointer; transition: all 0.2s; margin-bottom: 8px; font-weight: 500; }
@@ -230,14 +229,16 @@ END:VCARD`;
 
         /* MAIN CONTENT */
         .main-content { flex: 1; display: flex; flex-direction: column; position: relative; overflow: hidden; }
-        .top-toolbar { height: 70px; background: var(--bg-panel); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 30px; }
+        .top-toolbar { height: 70px; background: var(--bg-panel); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 30px; flex-shrink: 0; }
         
         /* SETTINGS */
         .settings-area { display: flex; align-items: center; gap: 20px; }
         .setting-item { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); }
         .color-trigger { width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--border); cursor: pointer; position: relative; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); transition: transform 0.2s; }
         .color-trigger:hover { transform: scale(1.1); border-color: var(--accent); }
-        .native-color-input { position: absolute; top: -10px; left: -10px; width: 60px; height: 60px; opacity: 0; cursor: pointer; }
+        
+        /* FIX: Ensure color picker works on mobile */
+        .native-color-input { position: absolute; top: -10px; left: -10px; width: 60px; height: 60px; opacity: 0; cursor: pointer; padding: 0; margin: 0; }
 
         /* WORKSPACE */
         .workspace { flex: 1; overflow-y: auto; padding: 30px; background: var(--bg-body); }
@@ -249,13 +250,12 @@ END:VCARD`;
         .panel-title { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--primary); display: flex; align-items: center; gap: 8px; }
         .panel-body { padding: 0; overflow-y: auto; flex: 1; display: flex; flex-direction: column; }
         
-        /* INPUTS */
+        /* INPUTS & TEXTAREA */
         .input-pad { padding: 24px; }
         .field-label { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; display: block; }
         .field-input { width: 100%; padding: 12px; border-radius: 6px; border: 1px solid var(--border); background: #fff; font-size: 0.95rem; color: var(--text-main); }
-        .field-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(30, 41, 59, 0.1); }
         
-        /* UPDATED BULK TEXTAREA STYLE */
+        /* HIGH CONTRAST BULK TEXTAREA */
         .bulk-textarea { 
             width: 100%; 
             flex: 1; 
@@ -264,8 +264,8 @@ END:VCARD`;
             font-family: 'Monaco', monospace; 
             font-size: 14px; 
             line-height: 1.6; 
-            color: #1e293b; /* Dark Navy text for high contrast */
-            background-color: #ffffff; /* Pure White background */
+            color: #1e293b; /* Dark Navy Text */
+            background-color: #ffffff; /* Pure White BG */
             padding: 20px; 
             outline: none; 
         }
@@ -273,9 +273,7 @@ END:VCARD`;
         /* BUTTONS */
         .btn { padding: 8px 16px; border-radius: 6px; font-weight: 600; font-size: 0.85rem; cursor: pointer; border: none; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
         .btn-primary { background: var(--primary); color: white; }
-        .btn-primary:hover { background: var(--secondary); }
         .btn-outline { background: white; border: 1px solid var(--border); color: var(--text-main); }
-        .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
 
         /* RESULTS GRID */
         .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; padding: 20px; }
@@ -286,27 +284,41 @@ END:VCARD`;
         .grid-sub { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
         /* PREVIEW CARD */
-        .preview-stage { align-items: center; justify-content: center; background: #f8fafc; height: 100%; }
+        .preview-stage { align-items: center; justify-content: center; background: #f8fafc; height: 100%; min-height: 400px; }
         .preview-card { background: white; padding: 40px; border-radius: 16px; box-shadow: 0 20px 40px -10px rgba(0,0,0,0.1); border: 1px solid var(--border); text-align: center; }
         
         /* INSTRUCTION BOX */
         .info-box { background: #fffbeb; border-bottom: 1px solid #fcd34d; padding: 15px 20px; display: flex; gap: 10px; align-items: start; color: #92400e; font-size: 0.85rem; line-height: 1.5; }
 
-        /* RESPONSIVE */
+        /* MOBILE OVERLAY */
+        .mobile-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 90; display: none; }
+        .mobile-overlay.active { display: block; }
+
+        /* RESPONSIVE CSS */
         .mobile-menu-btn { display: none; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--primary); }
+        
         @media (max-width: 1024px) {
-           .split-view { grid-template-columns: 1fr; grid-template-rows: auto auto; display: block; overflow-y: auto; }
+           .split-view { grid-template-columns: 1fr; grid-template-rows: auto auto; display: block; }
            .panel { height: auto; min-height: 500px; margin-bottom: 30px; }
         }
+        
         @media (max-width: 768px) {
-           .sidebar { position: absolute; height: 100%; transform: translateX(-100%); }
+           .app-shell { display: block; height: auto; overflow-y: auto; } /* Fix for Mobile Scroll */
+           .sidebar { position: fixed; top: 0; bottom: 0; left: 0; transform: translateX(-100%); z-index: 100; }
            .sidebar.open { transform: translateX(0); }
+           .main-content { height: auto; overflow: visible; }
+           .top-toolbar { position: sticky; top: 0; z-index: 80; }
+           .workspace { height: auto; overflow: visible; padding: 15px; padding-bottom: 100px; }
            .mobile-menu-btn { display: block; }
-           .top-toolbar { padding: 0 15px; }
+           .panel { height: auto; max-height: none; } /* Let panels grow */
+           .preview-stage { padding: 40px 0; }
            .settings-area { gap: 10px; }
-           .setting-item span { display: none; }
+           .setting-item span { display: none; } /* Hide labels on mobile toolbar */
         }
       `}</style>
+
+      {/* MOBILE BACKDROP */}
+      <div className={`mobile-overlay ${isMobileMenuOpen ? 'active' : ''}`} onClick={() => setIsMobileMenuOpen(false)}></div>
 
       {/* SIDEBAR */}
       <aside className={`sidebar ${isMobileMenuOpen ? 'open' : ''}`}>
@@ -362,7 +374,7 @@ END:VCARD`;
                   <div className="panel-title"><FileText size={16}/> Input Data</div>
                 </div>
                 
-                {/* INSTRUCTION BOX (REPLACED DEFAULT COMPANY INPUT) */}
+                {/* INSTRUCTION BOX */}
                 <div className="info-box">
                    <AlertCircle size={18} style={{flexShrink:0, marginTop:2}}/>
                    <div>
