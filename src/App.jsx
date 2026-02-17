@@ -5,7 +5,7 @@ import { saveAs } from 'file-saver';
 import { 
   LayoutDashboard, Users, FileText, Settings, Download, 
   Menu, X, CheckCircle, Grid, Phone, Briefcase, 
-  MapPin, Globe, Mail, User, Building, AlertCircle
+  MapPin, Globe, Mail, User, Building, AlertCircle, Palette
 } from 'lucide-react';
 
 const TZ_REGIONS = [
@@ -26,7 +26,7 @@ function App() {
   // --- SINGLE ENTRY STATE ---
   const [contact, setContact] = useState({
     firstName: '', lastName: '', company: '', jobTitle: '',
-    email: '', website: '', street: '', region: 'Dar es Salaam', country: 'Tanzania',
+    email: '', website: '', street: '', city: '', region: 'Dar es Salaam', country: 'Tanzania',
     phones: [{ number: '', type: 'CELL' }] 
   });
 
@@ -34,7 +34,7 @@ function App() {
   const [bulkText, setBulkText] = useState('');
   const [bulkContacts, setBulkContacts] = useState([]);
 
-  // --- LOGIC: SMART PARSER ---
+  // --- LOGIC: AUDITED SMART PARSER ---
   const parseBulkData = () => {
     if (!bulkText) { setBulkContacts([]); return; }
     
@@ -46,7 +46,6 @@ function App() {
 
     const saveCurrentContact = () => {
         if (currentContact) {
-            // Only push if it has at least a name or a phone number
             if (currentContact.firstName || currentContact.phones.length > 0) {
                 parsedContacts.push(currentContact);
             }
@@ -78,7 +77,7 @@ function App() {
          if (!currentContact) {
              currentContact = {
                 region: currentRegion, country: 'Tanzania', phones: [],
-                firstName: '', lastName: '', company: '', jobTitle: '', email: '', website: '', street: ''
+                firstName: '', lastName: '', company: '', jobTitle: '', email: '', website: '', street: '', city: ''
              };
          }
 
@@ -101,18 +100,24 @@ function App() {
 
             if (key.includes('first') || key === 'name') currentContact.firstName = val;
             else if (key.includes('last')) currentContact.lastName = val;
-            else if (key.includes('company') || key.includes('org') || key.includes('biashara')) currentContact.company = val;
-            else if (key.includes('job') || key.includes('title') || key.includes('cheo')) currentContact.jobTitle = val;
-            else if (key.includes('email') || key.includes('barua')) currentContact.email = val;
+            else if (key.includes('company') || key.includes('org')) currentContact.company = val;
+            else if (key.includes('job') || key.includes('title')) currentContact.jobTitle = val;
+            else if (key.includes('email')) currentContact.email = val;
             else if (key.includes('web') || key.includes('url')) currentContact.website = val;
-            else if (key.includes('address') || key.includes('loc') || key.includes('anwani')) currentContact.street = val;
-            else if (key.includes('phone') || key.includes('mobile') || key.includes('simu') || key.includes('tel')) {
+            
+            // Enhanced Address Detection
+            else if (key.includes('address') || key.includes('street') || key.includes('loc') || key.includes('mtaa')) currentContact.street = val;
+            else if (key.includes('city') || key.includes('district') || key.includes('wilaya')) currentContact.city = val;
+            else if (key.includes('region') || key.includes('mkoa')) currentContact.region = val;
+
+            else if (key.includes('phone') || key.includes('mobile')) {
                val.split(/[\/,]/).forEach(n => {
                   if(n.trim().length > 3) currentContact.phones.push({ number: n.trim(), type: 'CELL' });
                });
             }
          }
          else {
+            // Heuristic fallbacks
             if (cleanLine.includes('@') && cleanLine.includes('.')) {
                currentContact.email = cleanLine;
             }
@@ -151,7 +156,11 @@ function App() {
         if (clean.startsWith('0')) finalNum = `+255${clean.substring(1)}`;
         return `TEL;${p.type};VOICE:${finalNum}`;
     }).join('\n');
-    const addressLine = `ADR;WORK;PREF:;;${c.street};${c.region};;;${c.country}`;
+    
+    // Combine City/Street into standard vCard address
+    // Format: ;;Street;City;Region;Zip;Country
+    const fullStreet = c.city ? `${c.street}, ${c.city}` : c.street;
+    const addressLine = `ADR;WORK;PREF:;;${fullStreet};${c.region};;;${c.country}`;
 
     return `BEGIN:VCARD
 VERSION:2.1
@@ -202,10 +211,10 @@ END:VCARD`;
     <div className="app-shell">
       <style>{`
         :root {
-          --primary: #1e293b;   /* Midnight Navy */
-          --secondary: #0f172a; /* Darker Navy */
-          --accent: #d97706;    /* Professional Gold */
-          --bg-body: #f1f5f9;   
+          --primary: #1e293b;
+          --secondary: #0f172a;
+          --accent: #d97706;
+          --bg-body: #f1f5f9;
           --bg-panel: #ffffff;
           --border: #e2e8f0;
           --text-main: #334155;
@@ -215,30 +224,33 @@ END:VCARD`;
         * { box-sizing: border-box; }
         body { margin: 0; padding: 0; font-family: 'Inter', system-ui, sans-serif; background: var(--bg-body); color: var(--text-main); }
 
-        /* LAYOUT - MOBILE FIRST SCROLLING */
+        /* LAYOUT - SCROLLING FIX FOR MOBILE */
         .app-shell { display: flex; height: 100vh; width: 100vw; overflow: hidden; }
         
         /* SIDEBAR */
-        .sidebar { width: 260px; background: var(--primary); color: white; display: flex; flex-direction: column; flex-shrink: 0; transition: transform 0.3s ease; z-index: 100; box-shadow: 4px 0 24px rgba(0,0,0,0.1); }
-        .logo-section { height: 70px; display: flex; align-items: center; padding: 0 24px; font-size: 1.25rem; font-weight: 800; border-bottom: 1px solid rgba(255,255,255,0.1); letter-spacing: -0.5px; }
+        .sidebar { width: 260px; background: var(--primary); color: white; display: flex; flex-direction: column; flex-shrink: 0; transition: transform 0.3s ease; z-index: 200; box-shadow: 4px 0 24px rgba(0,0,0,0.1); }
+        .logo-section { height: 70px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; font-size: 1.25rem; font-weight: 800; border-bottom: 1px solid rgba(255,255,255,0.1); letter-spacing: -0.5px; }
         .nav-menu { padding: 20px 15px; flex: 1; }
         .nav-link { display: flex; align-items: center; gap: 12px; padding: 14px 16px; color: #94a3b8; text-decoration: none; border-radius: 8px; cursor: pointer; transition: all 0.2s; margin-bottom: 8px; font-weight: 500; }
         .nav-link:hover { background: rgba(255,255,255,0.05); color: white; transform: translateX(5px); }
         .nav-link.active { background: var(--accent); color: white; font-weight: 700; box-shadow: 0 4px 12px rgba(217, 119, 6, 0.4); }
         .sidebar-footer { padding: 20px; font-size: 0.75rem; color: #64748b; text-align: center; border-top: 1px solid rgba(255,255,255,0.1); }
 
+        /* MOBILE CLOSE BUTTON INSIDE SIDEBAR */
+        .sidebar-close-btn { display: none; background: none; border: none; color: white; cursor: pointer; }
+
         /* MAIN CONTENT */
         .main-content { flex: 1; display: flex; flex-direction: column; position: relative; overflow: hidden; }
         .top-toolbar { height: 70px; background: var(--bg-panel); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 30px; flex-shrink: 0; }
         
-        /* SETTINGS */
+        /* SETTINGS - IMPROVED COLOR PICKER */
         .settings-area { display: flex; align-items: center; gap: 20px; }
         .setting-item { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); }
-        .color-trigger { width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--border); cursor: pointer; position: relative; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); transition: transform 0.2s; }
-        .color-trigger:hover { transform: scale(1.1); border-color: var(--accent); }
         
-        /* FIX: Ensure color picker works on mobile */
-        .native-color-input { position: absolute; top: -10px; left: -10px; width: 60px; height: 60px; opacity: 0; cursor: pointer; padding: 0; margin: 0; }
+        /* NATIVE COLOR TRIGGER */
+        .color-wrapper { position: relative; width: 36px; height: 36px; border-radius: 50%; overflow: hidden; border: 2px solid var(--border); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .native-color-input { position: absolute; top: -5px; left: -5px; width: 50px; height: 50px; opacity: 0; cursor: pointer; padding: 0; margin: 0; border: none; }
+        .color-preview { width: 100%; height: 100%; pointer-events: none; }
 
         /* WORKSPACE */
         .workspace { flex: 1; overflow-y: auto; padding: 30px; background: var(--bg-body); }
@@ -254,20 +266,12 @@ END:VCARD`;
         .input-pad { padding: 24px; }
         .field-label { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; display: block; }
         .field-input { width: 100%; padding: 12px; border-radius: 6px; border: 1px solid var(--border); background: #fff; font-size: 0.95rem; color: var(--text-main); }
+        .field-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(30, 41, 59, 0.1); }
         
-        /* HIGH CONTRAST BULK TEXTAREA */
         .bulk-textarea { 
-            width: 100%; 
-            flex: 1; 
-            border: none; 
-            resize: none; 
-            font-family: 'Monaco', monospace; 
-            font-size: 14px; 
-            line-height: 1.6; 
-            color: #1e293b; /* Dark Navy Text */
-            background-color: #ffffff; /* Pure White BG */
-            padding: 20px; 
-            outline: none; 
+            width: 100%; flex: 1; border: none; resize: none; 
+            font-family: 'Monaco', monospace; font-size: 14px; line-height: 1.6; 
+            color: #1e293b; background-color: #ffffff; padding: 20px; outline: none; 
         }
         
         /* BUTTONS */
@@ -291,10 +295,10 @@ END:VCARD`;
         .info-box { background: #fffbeb; border-bottom: 1px solid #fcd34d; padding: 15px 20px; display: flex; gap: 10px; align-items: start; color: #92400e; font-size: 0.85rem; line-height: 1.5; }
 
         /* MOBILE OVERLAY */
-        .mobile-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 90; display: none; }
+        .mobile-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 150; display: none; }
         .mobile-overlay.active { display: block; }
 
-        /* RESPONSIVE CSS */
+        /* RESPONSIVE CSS - CRITICAL FIXES */
         .mobile-menu-btn { display: none; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--primary); }
         
         @media (max-width: 1024px) {
@@ -303,17 +307,27 @@ END:VCARD`;
         }
         
         @media (max-width: 768px) {
-           .app-shell { display: block; height: auto; overflow-y: auto; } /* Fix for Mobile Scroll */
-           .sidebar { position: fixed; top: 0; bottom: 0; left: 0; transform: translateX(-100%); z-index: 100; }
+           /* FIX SCROLLING */
+           body { overflow: auto; }
+           .app-shell { display: block; height: auto; overflow: visible; } 
+           
+           /* FIX SIDEBAR */
+           .sidebar { position: fixed; top: 0; bottom: 0; left: 0; transform: translateX(-100%); z-index: 200; height: 100vh; }
            .sidebar.open { transform: translateX(0); }
+           .sidebar-close-btn { display: block; } /* Show X button on mobile */
+           
+           /* FIX MAIN CONTENT */
            .main-content { height: auto; overflow: visible; }
-           .top-toolbar { position: sticky; top: 0; z-index: 80; }
-           .workspace { height: auto; overflow: visible; padding: 15px; padding-bottom: 100px; }
+           .top-toolbar { position: sticky; top: 0; z-index: 100; padding: 0 15px; }
+           .workspace { height: auto; overflow: visible; padding: 15px; padding-bottom: 80px; }
+           
            .mobile-menu-btn { display: block; }
-           .panel { height: auto; max-height: none; } /* Let panels grow */
+           .panel { height: auto; max-height: none; min-height: auto; margin-bottom: 20px; }
            .preview-stage { padding: 40px 0; }
-           .settings-area { gap: 10px; }
-           .setting-item span { display: none; } /* Hide labels on mobile toolbar */
+           
+           /* HIDE LABELS ON MOBILE TOOLBAR TO SAVE SPACE */
+           .settings-area { gap: 15px; }
+           .setting-item span { display: none; }
         }
       `}</style>
 
@@ -322,7 +336,14 @@ END:VCARD`;
 
       {/* SIDEBAR */}
       <aside className={`sidebar ${isMobileMenuOpen ? 'open' : ''}`}>
-        <div className="logo-section">PRIME QR <span style={{color:'var(--accent)', marginLeft:'5px'}}>PRO</span></div>
+        <div className="logo-section">
+          <div>PRIME QR <span style={{color:'var(--accent)', marginLeft:'5px'}}>PRO</span></div>
+          {/* MOBILE CLOSE BUTTON */}
+          <button className="sidebar-close-btn" onClick={() => setIsMobileMenuOpen(false)}>
+            <X size={24} />
+          </button>
+        </div>
+        
         <nav className="nav-menu">
           <div className={`nav-link ${mode === 'single' ? 'active' : ''}`} onClick={() => {setMode('single'); setIsMobileMenuOpen(false);}}>
             <LayoutDashboard size={18} /> Single Entry
@@ -338,24 +359,26 @@ END:VCARD`;
       <main className="main-content">
         <header className="top-toolbar">
           <div style={{display:'flex', alignItems:'center', gap:'15px'}}>
-            <button className="mobile-menu-btn" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
-              {isMobileMenuOpen ? <X /> : <Menu />}
+            <button className="mobile-menu-btn" onClick={() => setIsMobileMenuOpen(true)}>
+              <Menu />
             </button>
             <div className="page-header">
-              {mode === 'single' ? 'New Contact' : 'Bulk Data Processor'}
+              {mode === 'single' ? 'New Contact' : 'Bulk Data'}
             </div>
           </div>
 
           <div className="settings-area">
              <div className="setting-item">
                <span>Color</span>
-               <div className="color-trigger" style={{background: qrColor}}>
+               <div className="color-wrapper">
+                 <div className="color-preview" style={{backgroundColor: qrColor}}></div>
                  <input type="color" className="native-color-input" value={qrColor} onChange={(e) => setQrColor(e.target.value)} />
                </div>
              </div>
              <div className="setting-item">
                <span>Bg</span>
-               <div className="color-trigger" style={{background: bgColor}}>
+               <div className="color-wrapper">
+                 <div className="color-preview" style={{backgroundColor: bgColor}}></div>
                  <input type="color" className="native-color-input" value={bgColor} onChange={(e) => setBgColor(e.target.value)} />
                </div>
              </div>
@@ -374,11 +397,10 @@ END:VCARD`;
                   <div className="panel-title"><FileText size={16}/> Input Data</div>
                 </div>
                 
-                {/* INSTRUCTION BOX */}
                 <div className="info-box">
                    <AlertCircle size={18} style={{flexShrink:0, marginTop:2}}/>
                    <div>
-                     <strong>Attention:</strong> For massive data entry, please ensure that every entry in your list includes all necessary fields (First Name, Last Name, Phone, Company, etc.) to ensure accurate generation.
+                     <strong>Attention:</strong> Ensure every entry includes all necessary fields (First Name, Last Name, Phone, Company, etc.) to ensure accurate generation.
                    </div>
                 </div>
 
@@ -403,9 +425,9 @@ END:VCARD`;
                 </div>
                 <div className="panel-body" style={{background:'#f8fafc'}}>
                    {bulkContacts.length === 0 ? (
-                      <div style={{textAlign:'center', marginTop:'100px', color:'#94a3b8'}}>
+                      <div style={{textAlign:'center', marginTop:'100px', color:'#94a3b8', padding: '0 20px'}}>
                          <Grid size={48} style={{opacity:0.2, marginBottom:'10px'}}/>
-                         <p>Waiting for data...</p>
+                         <p>Paste data to see results</p>
                       </div>
                    ) : (
                       <div className="grid-container">
@@ -465,11 +487,17 @@ END:VCARD`;
                    <div>
                       <label className="field-label">Location</label>
                       <input className="field-input" name="street" placeholder="Street" style={{marginBottom:'10px'}} onChange={handleSingleChange}/>
-                      <div style={{display:'flex', gap:'10px'}}>
-                         <select className="field-input" name="region" value={contact.region} onChange={handleSingleChange}>
-                            {TZ_REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
-                         </select>
-                         <input className="field-input" name="country" defaultValue="Tanzania" onChange={handleSingleChange}/>
+                      <div style={{display:'grid', gridTemplateColumns: '1fr 1fr', gap:'10px'}}>
+                         <div>
+                           <label className="field-label" style={{fontSize:'0.7rem'}}>City/District</label>
+                           <input className="field-input" name="city" placeholder="City" onChange={handleSingleChange}/>
+                         </div>
+                         <div>
+                           <label className="field-label" style={{fontSize:'0.7rem'}}>Region</label>
+                           <select className="field-input" name="region" value={contact.region} onChange={handleSingleChange}>
+                              {TZ_REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
+                           </select>
+                         </div>
                       </div>
                    </div>
                 </div>
